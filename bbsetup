@@ -20,26 +20,28 @@ declare -A installations=(
 
 #
 logger "[+] Updating system & installing any required packages first"
+sleep 3
 
 # These are important to be able to run the script.
 sudo apt install wget git curl build-essential libpcap-dev -y
 
 logger "[+] Packages installed"
-sleep 1
+sleep 2
 
 logger "Checking and setting up Go..."
-sleep 1
+sleep 2
 
 if command -v go &> /dev/null; then
     logger "✓ Go installed version: $(go version)"
     sleep 2
 else
     logger "✗ Go not installed - installing now..."
-    
+    sleep 2
     # Update packages
     sudo apt update -y
     sudo apt upgrade -y
 
+    sleep 2
     # Download Go
     logger "Downloading Go..."
     curl --output file.gz https://dl.google.com/go/go1.25.3.linux-amd64.tar.gz
@@ -48,14 +50,17 @@ else
     # Extract Go
     logger "Extracting Go..."
     sudo tar -C /usr/local -xzf file.gz
-    
+    sleep 2
+
     # Clean up
     logger "Cleaning up..."
     sudo rm file.gz
+    sleep 2
     
     # Create Go workspace
     logger "Creating Go workspace..."
     mkdir -p ~/go/{bin,src,pkg}
+    sleep 2
     
     # Add to .bashrc if not already there
     if ! grep -q "GOROOT" ~/.bashrc; then
@@ -85,6 +90,7 @@ else
     fi
     
     logger "Installation complete! Restart your terminal or run: source ~/.bashrc"
+    sleep 2
 fi
 
 
