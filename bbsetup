@@ -1,9 +1,14 @@
 #!/bin/bash
 # Tool created to quickly setup an environment for bug bounty.
 
+# Added some colors found online. 
+RED='\033[0;31m'
+CYAN='\033[0;36m'
+CLEAR='\033[0m'
+
 # Logger function
 logger() {
-    echo "[$(date +%H:%M:%S)] $*"
+    echo -e "[$(date +%H:%M:%S)] $*"
 }
 
 # Declare associative arrays
@@ -25,30 +30,30 @@ declare -A installations=(
 )
 
 #
-logger "[+] Updating system & installing any required packages first"
+logger "${RED}[+]${CLEAR} Updating system & installing any required packages first"
 
 # These are important to be able to run the script.
-sudo apt install wget git curl build-essential libpcap-dev -y
+sudo apt install wget git curl build-essential libpcap-dev -y &> /dev/null
 
-logger "[+] Packages installed"
+logger "${CYAN}✓${CLEAR} Packages installed"
 sleep 1
 
 logger "Checking and setting up Go..."
 sleep 1
 
 if command -v go &> /dev/null; then
-    logger "✓ Go installed version: $(go version)"
-    sleep 2
+    logger "${CYAN}✓${CLEAR} Go installed version: $(go version)"
+    sleep 1
 else
-    logger "✗ Go not installed - installing now..."
+    logger "${RED}✗${CLEAR} Go not installed - installing now..."
     
     # Update packages
-    sudo apt update -y
-    sudo apt upgrade -y
+    sudo apt update -y &> /dev/null
+    sudo apt upgrade -y &> /dev/null
 
     # Download Go
     logger "Downloading Go..."
-    curl --output file.gz https://dl.google.com/go/go1.25.3.linux-amd64.tar.gz
+    curl --output file.gz https://dl.google.com/go/go1.25.3.linux-amd64.tar.gz &> /dev/null
     sleep 2
     
     # Extract Go
@@ -60,7 +65,7 @@ else
     sudo rm file.gz
     
     # Create Go workspace
-    logger "Creating Go workspace..."
+    logger "${CYAN}[INFO]${CLEAR}Creating Go workspace..."
     mkdir -p ~/go/{bin,src,pkg}
     
     # Add to .bashrc if not already there
@@ -84,68 +89,79 @@ else
     
     # Verify Go installation
     if command -v go &> /dev/null; then
-        logger "✓ Go installed successfully: $(go version)"
+        logger "${CYAN}✓${CLEAR} Go installed successfully: $(go version)"
     else
-        logger "✗ Go installation failed"
+        logger "${RED}✗${CLEAR} Go installation failed"
         exit 1
     fi
     
-    logger "Installation complete! Restart your terminal or run: source ~/.bashrc"
+    logger "${CYAN}✓${CLEAR} Installation complete! Restart your terminal or run: source ~/.bashrc"
 fi
 
 
-logger "Checking for bug bounty tools (${#installations[@]} total)..."
+logger "${CYAN}[INFO]${CLEAR}Checking for bug bounty tools (${#installations[@]} total)..."
 
 for tool in "${!installations[@]}"; do
     if command -v "$tool" &> /dev/null; then
-        logger "✓ $tool is already installed"
-        sleep 2
+        logger "${CYAN}✓${CLEAR} $tool is already installed"
+        sleep 1
     else
-        logger "✗ $tool is not installed - installing now..."
-        go install "${installations[$tool]}"
-        sleep 2
+        logger "${RED}✗${CLEAR} $tool is not installed - installing now..."
+        go install "${installations[$tool]}" &> /dev/null
+        sleep 1
         
         if command -v "$tool" &> /dev/null; then
-            logger "✓ $tool installed successfully"
-            sleep 2
+            logger "${CYAN}✓${CLEAR} $tool installed successfully"
+            sleep 1
         else
-            logger "✗ $tool installation failed"
-            sleep 2
+            logger "${RED}✗${CLEAR} $tool installation failed"
+            sleep 1
         fi
     fi
 done
 
 sleep 2
-logger "[!] Checking if $USER has gf patterns installed!"
+logger "${CYAN}[INFO]${CLEAR} Checking if $USER has gf patterns installed!"
 
 
 if ! grep -q "gf-completion.bash" ~/.bashrc || ! ls ~/.gf/*.json &> /dev/null; then
-    logger "[!] $USER doesn't have gf-completion patterns installed! Installing now..."
+    logger "${RED}✗${CLEAR} $USER doesn't have gf-completion patterns installed! Installing now..."
     echo "source $GOPATH/pkg/mod/github.com/tomnomnom/gf@v0.0.0-20200618134122-dcd4c361f9f5/gf-completion.bash" >> ~/.bashrc
-    sleep 2
+    sleep 1
 
-    logger "[+] Creating directories"
+    logger "${CYAN}[INFO]${CLEAR} Creating directories"
     mkdir -p ~/.gf
-    sleep 2
+    sleep 1
 
     cp -r "$GOPATH"/pkg/mod/github.com/tomnomnom/gf@v0.0.0-20200618134122-dcd4c361f9f5/examples ~/.gf
-    sleep 2
+    sleep 1
 
-    logger "[!] Downloading and installing gf patterns..."
-    git clone https://github.com/1ndianl33t/Gf-Patterns
+    logger "${CYAN}[INFO]${CLEAR} Downloading and installing gf patterns..."
+
+    # Adding OR here just incase the git clone fails.
+    git clone https://github.com/1ndianl33t/Gf-Patterns &> /dev/null || {
+        logger "${RED}✗${CLEAR} Failed to clone patterns!"
+        exit 1
+    }
     mkdir -p ~/.gf
     sleep 1
 
     mv Gf-Patterns/*.json ~/.gf
-    sleep 2
+    sleep 1
 
-    logger "[!] Checking if user has patterns"
+    rm -rf Gf-Patterns
+    sleep 1
+
+    logger "${CYAN}[INFO]${CLEAR} Checking if user has patterns"
     if ls ~/.gf/*.json 1> /dev/null 2>&1; then
-        logger "[SUCCESS] All packages and patterns installed! Script complete"
+        logger "${CYAN}✓${CLEAR} All packages and patterns installed! Script complete"
     else
-        echo -e "${RED}[ERR]${CLEAR} Error patterns not installed!"
+        logger "${RED}✗${CLEAR} Error patterns not installed!"
         exit 1
     fi
 else
-    logger "[SUCCESS] All packages and patterns installed! Script complete"
+    logger "${CYAN}✓${CLEAR} All packages and patterns installed! Script complete"
 fi
+
+logger "${RED}[WARN]${CLEAR} Please type: source ~/.bashrc to complete setup and load PATHs"
+logger "${CYAN}✓${CLEAR} Setup complete enjoy ;)"
