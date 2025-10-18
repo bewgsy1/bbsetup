@@ -16,30 +16,35 @@ declare -A installations=(
     ["gf"]="github.com/tomnomnom/gf@latest"
     ["anew"]="github.com/tomnomnom/anew@latest"
     ["naabu"]="github.com/projectdiscovery/naabu/v2/cmd/naabu@latest"
+    ["waybackurls"]="github.com/tomnomnom/waybackurls@latest"
+    ["kxss"]="github.com/Emoe/kxss@latest"
+    ["dalfox"]="github.com/hahwul/dalfox/v2@latest"
+    ["gau"]="github.com/lc/gau/v2/cmd/gau@latest"
+    ["gauplus"]="github.com/bp0lr/gauplus@latest"
+    ["ffuf"]="github.com/ffuf/ffuf/v2@latest"
 )
 
 #
 logger "[+] Updating system & installing any required packages first"
-sleep 3
 
 # These are important to be able to run the script.
-sudo apt update -y
-sudo apt upgrade -y
 sudo apt install wget git curl build-essential libpcap-dev -y
 
 logger "[+] Packages installed"
-sleep 2
+sleep 1
 
 logger "Checking and setting up Go..."
-sleep 2
+sleep 1
 
 if command -v go &> /dev/null; then
     logger "✓ Go installed version: $(go version)"
     sleep 2
 else
     logger "✗ Go not installed - installing now..."
-    sleep 2
-
+    
+    # Update packages
+    sudo apt update -y
+    sudo apt upgrade -y
 
     # Download Go
     logger "Downloading Go..."
@@ -49,17 +54,14 @@ else
     # Extract Go
     logger "Extracting Go..."
     sudo tar -C /usr/local -xzf file.gz
-    sleep 2
-
+    
     # Clean up
     logger "Cleaning up..."
     sudo rm file.gz
-    sleep 2
     
     # Create Go workspace
     logger "Creating Go workspace..."
     mkdir -p ~/go/{bin,src,pkg}
-    sleep 2
     
     # Add to .bashrc if not already there
     if ! grep -q "GOROOT" ~/.bashrc; then
@@ -89,7 +91,6 @@ else
     fi
     
     logger "Installation complete! Restart your terminal or run: source ~/.bashrc"
-    sleep 2
 fi
 
 
@@ -115,4 +116,36 @@ for tool in "${!installations[@]}"; do
 done
 
 sleep 2
-logger "[+] All tools checked/installed!"
+logger "[!] Checking if $USER has gf patterns installed!"
+
+
+if ! grep -q "gf-completion.bash" ~/.bashrc || ! ls ~/.gf/*.json &> /dev/null; then
+    logger "[!] $USER doesn't have gf-completion patterns installed! Installing now..."
+    echo "source $GOPATH/pkg/mod/github.com/tomnomnom/gf@v0.0.0-20200618134122-dcd4c361f9f5/gf-completion.bash" >> ~/.bashrc
+    sleep 2
+
+    logger "[+] Creating directories"
+    mkdir -p ~/.gf
+    sleep 2
+
+    cp -r "$GOPATH"/pkg/mod/github.com/tomnomnom/gf@v0.0.0-20200618134122-dcd4c361f9f5/examples ~/.gf
+    sleep 2
+
+    logger "[!] Downloading and installing gf patterns..."
+    git clone https://github.com/1ndianl33t/Gf-Patterns
+    mkdir -p ~/.gf
+    sleep 1
+
+    mv Gf-Patterns/*.json ~/.gf
+    sleep 2
+
+    logger "[!] Checking if user has patterns"
+    if ls ~/.gf/*.json 1> /dev/null 2>&1; then
+        logger "[SUCCESS] All packages and patterns installed! Script complete"
+    else
+        echo -e "${RED}[ERR]${CLEAR} Error patterns not installed!"
+        exit 1
+    fi
+else
+    logger "[SUCCESS] All packages and patterns installed! Script complete"
+fi
