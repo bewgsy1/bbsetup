@@ -23,6 +23,8 @@ logger "[+] Updating system & installing any required packages first"
 sleep 3
 
 # These are important to be able to run the script.
+sudo apt update -y
+sudo apt upgrade -y
 sudo apt install wget git curl build-essential libpcap-dev -y
 
 logger "[+] Packages installed"
@@ -37,11 +39,8 @@ if command -v go &> /dev/null; then
 else
     logger "✗ Go not installed - installing now..."
     sleep 2
-    # Update packages
-    sudo apt update -y
-    sudo apt upgrade -y
 
-    sleep 2
+
     # Download Go
     logger "Downloading Go..."
     curl --output file.gz https://dl.google.com/go/go1.25.3.linux-amd64.tar.gz
