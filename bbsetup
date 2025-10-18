@@ -1,0 +1,112 @@
+#!/bin/bash
+
+# Tool created to quickly setup an environment for bug bounty. 
+
+# Logger function() 
+
+logger() {
+    echo "[$(date +%H:%M:%S)] $*"
+}
+
+tools=("gospider" "katana" "httpx" "nuclei" "subfinder" "gf")
+
+# declare -A associative arrays. 
+
+declare -A installations=(
+    ["subfinder"]="github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest"
+    ["httpx"]="github.com/projectdiscovery/httpx/cmd/httpx@latest"
+    ["nuclei"]="github.com/projectdiscovery/nuclei/v3/cmd/nuclei@latest"
+    ["gospider"]="github.com/jaeles-project/gospider@latest"
+    ["katana"]="github.com/projectdiscovery/katana/cmd/katana@latest"
+    ["gf"]="github.com/tomnomnom/gf@latest"
+)
+
+
+logger "Checking and setting up go" 
+
+sleep 1
+
+if command -v go &> /dev/null; then 
+    logger "✓ Go installed version: $(go version)"
+    sleep 2
+else 
+    logger "✗ Go not installed - installing now..."
+
+    # Lets update first 
+    sudo apt update -y
+    sudo apt upgrade -y 
+    sudo apt install -y wget git curl
+
+    logger "! Downloading go"
+    curl --output file.gz https://dl.google.com/go/go1.25.3.linux-amd64.tar.gz
+    sleep 2
+
+    logger "! Extracting go..."
+    sudo tar -C /usr/local -xzf file.gz 
+
+    logger "! Cleaning file"
+    sudo rm file.gz
+
+    logger "[+] Creating Go workspaces"
+    mkdir -p ~/go/{bin,src,pkg}
+
+    # Grep and check if PATHS exist using grep 
+
+    if ! grep -q "GOROOT" ~/.bashrc; then
+        logger "Adding GO to bashrc"
+        echo "" >> ~/.bashrc
+        echo "# Go Environment" >> ~/.bashrc
+        echo "export GOROOT=/usr/local/go" >> ~/.bashrc
+        echo "export GOPATH=\$HOME/go" >> ~/.bashrc
+        echo "export PATH=\$PATH:\$GOROOT/bin:\$GOPATH/bin" >> ~/.bashrc
+    fi
+
+    sleep 2
+    
+    # Applying changes.
+    # Important BASH won't apply source ~/.bashrc so must manually set these myself. 
+    # User must run source ~/.bsahrc or open a new terminal for effects to take place. 
+    # But we can manually set them below to fix this. 
+    export GOROOT=/usr/local/go
+    export GOPATH=$HOME/go
+    export PATH=$PATH:$GOROOT/bin:$GOPATH/bin
+
+    sleep 2
+    # Finally checking if go is installed!
+    if command -v go &> /dev/null; then
+        logger "✓ Go installed successfully: $(go version)"
+    else 
+        logger "✗ Go installation failed"
+        exit 1
+    fi 
+
+    logger "Installation of go is complete! Restart your terminal or run: source ~/.bashrc"
+fi 
+
+
+
+logger "Script will check if [$USER] has all ${#tools[@]} installed..."
+logger "Checking [$USER]'s system for tools and installing missing tools!"
+
+for tool in "${!installations[@]}"; do
+    if command -v "$tool" &> /dev/null; then
+        logger "✓ $tool is already installed"
+        sleep 2
+    else 
+        logger "✗ $tool is not installed - installing now..."
+        go install "${installations[$tool]}"
+        sleep 2
+
+        if command -v "$tool" &> /dev/null; then
+            logger "✓ $tool installed successfully"
+            sleep 2
+        else 
+            logger "✗ $tool installation failed"
+            sleep 2
+        fi 
+    fi 
+done 
+
+sleep 2
+logger "[+] All tools installed"
+
